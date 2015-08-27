@@ -8,7 +8,7 @@ output: html_document
 
 ## Notes
 
-This document illustrates the preprocessing of the dataset visualized in this [article on srf.ch](www.srf.ch/news/wahlen-15/wahlkampf/so-haben-die-schweizer-gemeinden-seit-1971-gewaehlt).
+This document illustrates the preprocessing of the dataset visualized in this [article on srf.ch](http://www.srf.ch/news/wahlen-15/wahlkampf/so-haben-die-schweizer-gemeinden-seit-1971-gewaehlt).
 
 SRF Data attaches great importance to transparent and reproducible data preprocessing and -analysis. SRF Data believes in the principles of open data but also open and reproducible methods. Third parties should be empowered to build on the work of SRF Data and to generate new analyses and applications. 
 
