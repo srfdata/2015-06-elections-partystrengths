@@ -11,8 +11,8 @@ mkdir rscript
 # copy over necessary scripts from master branch 
 cp tmp/main.Rmd rscript
 
-mkdir rscript/output
 # copy over other nessecary output files from master branch
+cp -r tmp/output rscript/
 
 # copy over other necessary input files from master branch
 cp -r tmp/input rscript/
