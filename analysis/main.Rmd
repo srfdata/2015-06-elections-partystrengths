@@ -1,0 +1,293 @@
+---
+title: 'Federal Elections 2015: Communal Party Strengths'
+subtitle: 'Preprocessing and Analysis'
+author: "SRF Data, Timo Grossenbacher (timo.grossenbacher@srf.ch)" 
+date: "04/14/2015"
+output: html_document
+---
+
+## Notes
+
+This document illustrates the preprocessing of the dataset visualized in this [article on srf.ch](www.srf.ch/news/wahlen-15/wahlkampf/so-haben-die-schweizer-gemeinden-seit-1971-gewaehlt).
+
+SRF Data attaches great importance to transparent and reproducible data preprocessing and -analysis. SRF Data believes in the principles of open data but also open and reproducible methods. Third parties should be empowered to build on the work of SRF Data and to generate new analyses and applications. 
+
+### R-Script & processed data
+
+The preprocessing and analysis of the data was conducted in the R project for statistical computing. The RMarkdown script used to generate this document and all the resulting data can be downloaded [under this link](http://srfdata.github.io/2015-06-elections-partystrengths/rscript.zip). Through executing `main.Rmd`, the herein described process can be reproduced and this document can be generated. In the course of this, data from the folder `ìnput` will be processed and results will be written to `output`. 
+
+### GitHub
+
+The code for the herein described process can also be freely downloaded from [http://github.com/srfdata/2015-05-notrecht-ruestungsexporte](http://github.com/srfdata/2015-05-notrecht-ruestungsexporte). Criticism in the form of GitHub issues and pull requests are very welcome! 
+
+### License
+
+<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" /></a><br /><span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">2015-06-elections-partystrengths</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="https://github.com/srfdata/2015-06-elections-partystrengths" property="cc:attributionName" rel="cc:attributionURL">SRF Data</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.
+
+### Legal statement
+
+Die veröffentlichten Informationen sind sorgfältig zusammengestellt, erheben aber keinen Anspruch auf Aktualität, Vollständigkeit oder Richtigkeit. Es wird keine Haftung übernommen für Schäden, die  durch die Verwendung dieses Scripts oder der daraus gezogenen Informationen entstehen. Dies gilt ebenfalls für Inhalte Dritter, die über dieses Angebot zugänglich sind. 
+
+### Other projects
+
+All code & data from [SRF Data](http://srf.ch/data) is available under [http://srfdata.github.io](http://srfdata.github.io).
+
+## Data description
+
+### Original data source
+
+### Description of output
+
+
+## Preparations
+
+### Install packages
+
+```{r, echo=FALSE}
+# load necessary packages
+if(!require(dplyr)) {
+  install.packages("dplyr", repos="http://cran.us.r-project.org")
+  require(dplyr)
+}
+if(!require(tidyr)) {
+  install.packages("tidyr", repos="http://cran.us.r-project.org")
+  require(tidyr)
+}
+if(!require(ggplot2)) {
+  install.packages("ggplot2", repos="http://cran.us.r-project.org")
+  require(ggplot2)
+}
+if(!require(magrittr)) {
+  install.packages("magrittr", repos="http://cran.us.r-project.org")
+  require(magrittr)
+}
+if(!require(readxl)) {
+  devtools::install_github("hadley/readxl")
+  require(readxl)
+}
+
+
+```
+
+### Load necessary scripts
+
+```{r, echo=FALSE}
+knitr::read_chunk('scripts/preprocessing.R')
+source('scripts//preprocessing.R')
+```
+
+
+## Preprocessing
+
+### Municipality data
+
+```{r, echo=T}
+# load data
+# read in input file (xlsx) - need to load a slightly modified input file as the original xlsx makes it really complicated
+raw_data <- read_excel("input/parteienstaerke_mod_2.xlsx", sheet = 1, skip = 12, col_names = T)[1:2345,] # replace this subsetting with bugfix in readxl
+parties <- read_excel("input/parteienstaerke_mod_2.xlsx", sheet = 4)[1:24,]
+# all years 
+years <- seq(1971, 2011, 4)
+length(years) # we have 11 different time stamps
+
+# first problem: not all years have the same amount of parties, thus we need to fill up by year
+# first split the columns into sets for each year.
+
+# doublecheck that "1" is contained as many times as we have years
+table(names(raw_data) == "1")[2] == length(years)
+# this is true, so we can split the columns by this column name
+indices <- which(names(raw_data) == "1")
+yearlyDataframes <- list()
+for(i in 1:length(indices)){
+  start <- indices[i]
+  stop <- if(is.na(indices[i + 1])) ncol(raw_data) else indices[i + 1] - 1 
+  yearlyDataframes[[i]] <- prepareYearlyDataForVis(raw_data[,start:stop], years[i])
+}
+# combine
+filled_data <- cbind(raw_data[, 1:indices[1] - 1], yearlyDataframes)
+# doublecheck: column numbers should be 2 + 11 * 24
+dim(filled_data)[2] == 2 + 11 * 24
+
+# aggregate parties
+for(year in years){
+  # FDP
+  filled_data <- combineAndDelete(1, c(1, 5), year)
+  # Kleine Rechtsparteien
+  filled_data <- combineAndDelete(16, c(16, 15, 14, 17), year)
+  # Kleine Linksparteien
+  filled_data <- combineAndDelete(9, c(9, 27, 10, 11, 12), year)
+  # Andere
+  filled_data <- combineAndDelete(8, c(8, 6, 26, 35, 33), year)
+}
+# gather into long form
+long_data <- filled_data %>%
+  gather(ParteiJahr, Staerke,-c(BFSNr, GdeName))
+
+# add new columns Jahr and Partei from splitted ParteiJahr
+long_data %<>% separate(col = ParteiJahr, into = c("Partei","Jahr")) %>%
+  mutate(Jahr = as.Date(Jahr, "%Y")) %>%
+  tbl_df()
+
+
+# divide strength values through 100
+long_data %<>% mutate(Staerke = Staerke / 100)
+# only retain BFSNr
+long_data %<>% select(BFSNr, GdeName, Partei, Jahr, Staerke)
+```
+
+
+### National data
+
+```{r, echo=T}
+# country
+# read in input file (xlsx) - need to load a slightly modified input file as the original xlsx makes it really complicated
+raw_data_country <- read_excel("input/parteienstaerke_national.xlsx", sheet = 1, skip = 0, col_names = T)[1:24,] # replace this subsetting with bugfix in readxl
+
+long_data_country <- raw_data_country %>%
+  gather(Jahr, Staerke, -Partei) %>%
+  mutate(Jahr = as.Date(Jahr, "%Y")) %>%
+  select(Partei, Jahr, Staerke) %>%
+  rename(party = Partei, year = Jahr, support = Staerke) %>%
+  mutate(support = support / 100, year = as.numeric(format.Date(year, "%Y")))
+
+# aggregate parties
+combineAndDeleteCountry <- function(destination, sources, year){
+  long_data_country[long_data_country$year == year & long_data_country$party == destination,]$support <- sum(long_data_country[long_data_country$year == year & long_data_country$party %in% sources,]$support, na.rm = T)
+  to_deletes <- setdiff(sources, destination)
+  for(to_delete in to_deletes){
+    long_data_country[long_data_country$year == year & long_data_country$party == to_delete,]$support <- NA
+  }
+  return(long_data_country)
+}
+for(year in years){
+  # FDP
+  long_data_country <- combineAndDeleteCountry(1, c(1, 5), year)
+  # Kleine Rechtsparteien
+  long_data_country <- combineAndDeleteCountry(16, c(16, 15, 14, 17), year)
+  # Kleine Linksparteien
+  long_data_country <- combineAndDeleteCountry(9, c(9, 27, 10, 11, 12), year)
+  # Andere
+  long_data_country <- combineAndDeleteCountry(8, c(8, 6, 26, 35, 33), year)
+}
+
+dim(long_data_country)[1] == 11 * 24
+
+
+```
+
+
+## Output
+
+### Copy party data to output
+
+```{r}
+parties <- read.csv("input/parties.csv") # same here
+write.csv(parties, file = "output/parties.csv", row.names = F, na = "")
+```
+
+### Change variable names and doublecheck
+
+```{r}
+# change variable names
+long_data %<>% rename(year = Jahr, municipality = BFSNr, party = Partei, support = Staerke) %>%
+  mutate(year = as.numeric(format.Date(year, "%Y")), party = as.numeric(party))
+
+totalSupport <- long_data %>%
+  group_by(year, municipality) %>%
+  summarize(total = sum(support, na.rm = T)) %>%
+  filter(!(total > 0.999999999 & total < 1.000000001))
+
+totalSupport %>%
+  filter(total > 0.0)
+
+```
+
+### Map data
+
+```{r}
+mainDir <- getwd()
+subDir <- "output/map_data"
+dir.create(file.path(mainDir, subDir), showWarnings = FALSE)
+# For the map, we need 13 files (one for each of the 12 parties or groups of parties, plus one for 'all parties'). Each file represents support for a single party, and contains data for all municipalities in all years. In the case of 'all parties', it's the support for the strongest party in that municipality in that year. 
+
+# split by party and save
+for(i in parties$ID){ 
+  i <- as.character(i)
+  subset_data <- subset(long_data, party == i)
+  subset_data <- subset_data[complete.cases(subset_data),]
+  write.csv(subset_data, file = paste("output/map_data/party_", i, ".csv", sep = ""), row.names = F)
+}
+
+# save value for dominant party in each year/municipality
+dominance <- long_data %>%
+  group_by(municipality, year) %>%
+  arrange(desc(support)) %>%
+  # only take the most dominant party in each year
+  slice(1) %>%
+  ungroup()
+# only retain those where support is not NA
+subset_data <- dominance[complete.cases(dominance),]
+write.csv(subset_data, file = "output/map_data/dominant_party.csv", row.names = F)
+```
+
+### Chart data
+
+```{r}
+# For the area chart, we need many more files, one for each municipality plus one for all of Switzerland (we estimate that's about 2600 files). Each of these files should contain data for all parties in all years.
+mainDir <- getwd()
+subDir <- "output/chart_data"
+dir.create(file.path(mainDir, subDir), showWarnings = FALSE)
+# split by municipality and save
+for(i in unique(long_data$municipality)){ 
+  subset_data <- subset(long_data, municipality == i) %>%
+    select(party, year, support)
+  subset_data <- subset_data[complete.cases(subset_data),]
+  # check if support adds up to 100
+  totalSupport <- subset_data %>%
+    group_by(year) %>%
+    summarize(total = sum(support)) %>%
+    filter(!(total > 0.999999999 & total < 1.000000001))
+  # if it doesn't only retain those cases where it is not 0
+  totalSupport %<>%
+    filter(!(total < 0.000000001))
+  if(dim(totalSupport)[1] != 0){
+    warning("Party strengths do not sum up to 1 (or are not 0) in municipality ", i, " and year ", totalSupport$year)
+  }
+  write.csv(subset_data, file = paste("output/chart_data/municipality_", i, ".csv", sep = ""), row.names = F)
+}
+# save a file for whole switzerland
+subset_data <- long_data_country[complete.cases(long_data_country),]
+# check if support adds up to 100
+totalSupport <- subset_data %>%
+  group_by(year) %>%
+  summarize(total = sum(support)) %>%
+  filter(!(total > 0.999999999 & total < 1.000000001))
+if(dim(totalSupport)[1] != 0){
+  warning("Party strengths do not sum up to 1 in Switzerland and year ", totalSupport$year)
+}
+write.csv(subset_data, file = "output/chart_data/national.csv", row.names = F)
+```
+
+### all together
+
+```{r}
+alldata <- long_data %>% select(municipality, party, year, support)
+write.csv(alldata, "output/partystrengths.csv", row.names = F)
+```
+
+### Save municipality names & add translations into separate file 
+
+```{r}
+# save municipality names
+
+# first, load municipality name translations (src http://www.bfs.admin.ch/bfs/portal/de/index/infothek/nomenklaturen/blank/blank/gem_liste/03.Document.90142.xls, slightly edited to make it easier to read in)
+translated_names <- read_excel("input/gdenamen_translation.xlsx", sheet = 1)[1:75,]
+municipalities <- filled_data %>%
+  select(BFSNr, GdeName) %>%
+  rename(ID = BFSNr, Name_Official = GdeName)
+municipalities %<>%
+  left_join(translated_names, by = "Name_Official")
+
+write.csv(municipalities, file = "output/municipalities.csv", row.names = F, na = "")
+```
+
