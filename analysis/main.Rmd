@@ -1,6 +1,6 @@
 ---
 title: 'Federal Elections 2015: Communal Party Strengths'
-subtitle: 'Preprocessing and Analysis'
+subtitle: 'Preprocessing and analysis'
 author: "SRF Data, Timo Grossenbacher (timo.grossenbacher@srf.ch)" 
 date: "04/14/2015"
 output: html_document
@@ -14,19 +14,19 @@ SRF Data attaches great importance to transparent and reproducible data preproce
 
 ### R-Script & processed data
 
-The preprocessing and analysis of the data was conducted in the R project for statistical computing. The RMarkdown script used to generate this document and all the resulting data can be downloaded [under this link](http://srfdata.github.io/2015-06-elections-partystrengths/rscript.zip). Through executing `main.Rmd`, the herein described process can be reproduced and this document can be generated. In the course of this, data from the folder `ìnput` will be processed and results will be written to `output`. 
+The preprocessing and analysis of the data was conducted in the [R project for statistical computing](https://www.r-project.org/). The RMarkdown script used to generate this document and all the resulting data can be downloaded [under this link](http://srfdata.github.io/2015-06-elections-partystrengths/rscript.zip). Through executing `main.Rmd`, the herein described process can be reproduced and this document can be generated. In the course of this, data from the folder `ìnput` will be processed and results will be written to `output`. 
 
 ### GitHub
 
-The code for the herein described process can also be freely downloaded from [http://github.com/srfdata/2015-05-notrecht-ruestungsexporte](http://github.com/srfdata/2015-05-notrecht-ruestungsexporte). Criticism in the form of GitHub issues and pull requests are very welcome! 
+The code for the herein described process can also be freely downloaded from [https://github.com/srfdata/2015-06-elections-partystrengths](https://github.com/srfdata/2015-06-elections-partystrengths). Criticism in the form of GitHub issues and pull requests are very welcome! 
 
 ### License
 
 <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" /></a><br /><span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">2015-06-elections-partystrengths</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="https://github.com/srfdata/2015-06-elections-partystrengths" property="cc:attributionName" rel="cc:attributionURL">SRF Data</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.
 
-### Legal statement
+### Exclusion of liability
 
-Die veröffentlichten Informationen sind sorgfältig zusammengestellt, erheben aber keinen Anspruch auf Aktualität, Vollständigkeit oder Richtigkeit. Es wird keine Haftung übernommen für Schäden, die  durch die Verwendung dieses Scripts oder der daraus gezogenen Informationen entstehen. Dies gilt ebenfalls für Inhalte Dritter, die über dieses Angebot zugänglich sind. 
+The published information has been collated carefully, but no guarantee is offered of its completeness, correctness or up-to-date nature. No liability is accepted for damage or loss incurred from the use of this script or the information drawn from it. This exclusion of liability also applies to third-party content that is accessible via this offer.
 
 ### Other projects
 
@@ -36,8 +36,100 @@ All code & data from [SRF Data](http://srf.ch/data) is available under [http://s
 
 ### Original data source
 
+* `input/parteienstaerke.xlsx` - Communal party strengths, received by the Federal Statistical Office (BFS) (not publicly available as far as we know)
+* `input/parteienstaerke_mod_2.xlsx` - Slightly and manually structurally adjusted `parteienstaerke.xlsx` in order to make reading into R easier - note: file seems to have errors when opened via Excel/OpenOffice/etc. but still contains valid, R-readable data
+* `input/parteienstaerke_national.xlsx` - National party strengths, without formatting, as publicly available from [the BFS](http://www.bfs.admin.ch/bfs/portal/de/index/themen/17/02/blank/key/national_rat/parteienstaerke.Document.21769.xls)
+* `input/gdenamen_translation.xlsx` - Common translations for Swiss municipalities, without formatting, as publicly available from [the BFS](http://www.bfs.admin.ch/bfs/portal/de/index/infothek/nomenklaturen/blank/blank/gem_liste/03.Document.90142.xls) (sheet "Geb. Übers. - Trad. usuelles")
+* `input/geodata/g2g14.*` - Official, unaltered, generalized municipality borders (2014) as available from [the BFS](http://www.bfs.admin.ch/bfs/portal/de/index/dienstleistungen/geostat/datenbeschreibung/generalisierte_gemeindegrenzen.Document.183131.zip)
+
 ### Description of output
 
+The following sections describe the results of the data preprocessing as stored in the `output` folder. 
+
+#### `output/municipalities.csv`
+
+Contains metadata for all 2'345 municipalities as of May 1st, 2014, derived from `input/parteienstaerke_mod_2.xlsx` and `input/gdenamen_translation.xlsx`.
+
+| Attribute | Type | Description | 
+|-------|------|---------|
+| ID | Integer  | Official BFS-number   |
+|  Name_Official  |  String |   Official name of the municipality  |
+|    Name_D  |    String |     Contains the "common" German translation if it exists  |
+|    Name_F  |    String |     Contains the "common" French translation if it exists  |
+|    Name_I  |    String |     Contains the "common" Italian translation if it exists  |
+
+#### `output/parties.csv`
+
+Contains party classifications made by SRF Data with the help of political scientists, used throughout all projects related to elections.
+
+| Attribute | Type | Description | 
+|-------|------|---------|
+| ID | Integer  | Unique identifier  |
+|  Abbr_*  |  String |  Abbreviation in German (D), French (F), English (E), Romansh (R), Italian (I), respectively  |
+|  Legend_*  |  String |  Abbreviation, but with slightly more information, used for frontend purposes  |
+|  Name_*  |  String |  Full name  |
+|  Sortorder  |  Integer | Used for frontend purposes solely |
+|  OLD_ID  |  String | "Official" ID as given in `input/parteienstaerke_mod_2.xlsx` (sheet "Parteien"), used for combining party strengths for party groupings  |
+
+#### `output/partystrengths.csv`
+
+Party strengths 1971-2011 in all 2'345 municipalities, as derived from `input/parteienstaerke_mod_2.xlsx`. Note: The municipalities have already been harmonized to May 1st 2014 by the BFS.
+
+Note: Only those municipality-year-party combinations are contained where the party actually had candidates. 
+
+| Attribute | Type | Description | 
+|-------|------|---------|
+| municipality | Integer  | Unique identifier, referencing ID in `output/municipalities.csv`  |
+|  party  |  Integer |  Party or party grouping, referencing ID in `output/parties.csv`  |
+|  year  |  Integer |  Election year |
+|  support |  Double |  Party strength in fraction of 1  (e.g. 0.2 = 20%)|
+
+#### `output/by_municipality/municipality_{id}.csv`
+
+Party strengths 1971-2011 in municipality with BFS-number *id*. 
+
+Note: Only those year-party combinations are contained where the party actually had candidates. 
+
+| Attribute | Type | Description | 
+|-------|------|---------|
+|  party  |  Integer |  Party or party grouping, referencing ID in `output/parties.csv`  |
+|  year  |  Integer |  Election year |
+|  support |  Double |  Party strength in fraction of 1  (e.g. 0.2 = 20%)|
+
+#### `output/by_municipality/national.csv`
+
+Party strengths 1971-2011 on the national level.
+
+Note: Only those year-party combinations are contained where the party actually had candidates. 
+
+| Attribute | Type | Description | 
+|-------|------|---------|
+|  party  |  Integer |  Party or party grouping, referencing ID in `output/parties.csv`  |
+|  year  |  Integer |  Election year |
+|  support |  Double |  Party strength in fraction of 1  (e.g. 0.2 = 20%)|
+
+#### `output/by_party/party_{id}.csv`
+
+Party strengths 1971-2011 in all municipalities for party with *id* as defined in `output/parties.csv`. 
+
+Note: Only those year-municipality combinations are contained where the party actually had candidates. 
+
+| Attribute | Type | Description | 
+|-------|------|---------|
+| municipality | Integer  | Unique identifier, referencing ID in `output/municipalities.csv`  |
+|  year  |  Integer |  Election year |
+|  support |  Double |  Party strength in fraction of 1  (e.g. 0.2 = 20%)|
+
+#### `output/by_party/dominant_party.csv`
+
+Party strengths 1971-2011 with only the "dominant" party per year-municipality combination (i.e. the one with the most support)
+
+| Attribute | Type | Description | 
+|-------|------|---------|
+| municipality | Integer  | Unique identifier, referencing ID in `output/municipalities.csv`  |
+|  party  |  Integer |  Party or party grouping, referencing ID in `output/parties.csv`  |
+|  year  |  Integer |  Election year |
+|  support |  Double |  Party strength in fraction of 1  (e.g. 0.2 = 20%)|
 
 ## Preparations
 
@@ -108,7 +200,7 @@ filled_data <- cbind(raw_data[, 1:indices[1] - 1], yearlyDataframes)
 # doublecheck: column numbers should be 2 + 11 * 24
 dim(filled_data)[2] == 2 + 11 * 24
 
-# aggregate parties
+# aggregate parties (cf. to column OLD_ID in parties.csv)
 for(year in years){
   # FDP
   filled_data <- combineAndDelete(1, c(1, 5), year)
@@ -132,7 +224,7 @@ long_data %<>% separate(col = ParteiJahr, into = c("Partei","Jahr")) %>%
 # divide strength values through 100
 long_data %<>% mutate(Staerke = Staerke / 100)
 # only retain BFSNr
-long_data %<>% select(BFSNr, GdeName, Partei, Jahr, Staerke)
+long_data %<>% select(BFSNr, Partei, Jahr, Staerke)
 ```
 
 
@@ -151,14 +243,6 @@ long_data_country <- raw_data_country %>%
   mutate(support = support / 100, year = as.numeric(format.Date(year, "%Y")))
 
 # aggregate parties
-combineAndDeleteCountry <- function(destination, sources, year){
-  long_data_country[long_data_country$year == year & long_data_country$party == destination,]$support <- sum(long_data_country[long_data_country$year == year & long_data_country$party %in% sources,]$support, na.rm = T)
-  to_deletes <- setdiff(sources, destination)
-  for(to_delete in to_deletes){
-    long_data_country[long_data_country$year == year & long_data_country$party == to_delete,]$support <- NA
-  }
-  return(long_data_country)
-}
 for(year in years){
   # FDP
   long_data_country <- combineAndDeleteCountry(1, c(1, 5), year)
@@ -171,7 +255,8 @@ for(year in years){
 }
 
 dim(long_data_country)[1] == 11 * 24
-
+# delete incomplete cases
+# long_data_country[complete.cases(long_data_country),]
 
 ```
 
@@ -202,11 +287,11 @@ totalSupport %>%
 
 ```
 
-### Map data
+### By party
 
 ```{r}
 mainDir <- getwd()
-subDir <- "output/map_data"
+subDir <- "output/by_party"
 dir.create(file.path(mainDir, subDir), showWarnings = FALSE)
 # For the map, we need 13 files (one for each of the 12 parties or groups of parties, plus one for 'all parties'). Each file represents support for a single party, and contains data for all municipalities in all years. In the case of 'all parties', it's the support for the strongest party in that municipality in that year. 
 
@@ -215,7 +300,7 @@ for(i in parties$ID){
   i <- as.character(i)
   subset_data <- subset(long_data, party == i)
   subset_data <- subset_data[complete.cases(subset_data),]
-  write.csv(subset_data, file = paste("output/map_data/party_", i, ".csv", sep = ""), row.names = F)
+  write.csv(subset_data, file = paste("output/by_party/party_", i, ".csv", sep = ""), row.names = F)
 }
 
 # save value for dominant party in each year/municipality
@@ -227,15 +312,15 @@ dominance <- long_data %>%
   ungroup()
 # only retain those where support is not NA
 subset_data <- dominance[complete.cases(dominance),]
-write.csv(subset_data, file = "output/map_data/dominant_party.csv", row.names = F)
+write.csv(subset_data, file = "output/by_party/dominant_party.csv", row.names = F)
 ```
 
-### Chart data
+### By municipality
 
 ```{r}
 # For the area chart, we need many more files, one for each municipality plus one for all of Switzerland (we estimate that's about 2600 files). Each of these files should contain data for all parties in all years.
 mainDir <- getwd()
-subDir <- "output/chart_data"
+subDir <- "output/by_municipality"
 dir.create(file.path(mainDir, subDir), showWarnings = FALSE)
 # split by municipality and save
 for(i in unique(long_data$municipality)){ 
@@ -253,7 +338,7 @@ for(i in unique(long_data$municipality)){
   if(dim(totalSupport)[1] != 0){
     warning("Party strengths do not sum up to 1 (or are not 0) in municipality ", i, " and year ", totalSupport$year)
   }
-  write.csv(subset_data, file = paste("output/chart_data/municipality_", i, ".csv", sep = ""), row.names = F)
+  write.csv(subset_data, file = paste("output/by_municipality/municipality_", i, ".csv", sep = ""), row.names = F)
 }
 # save a file for whole switzerland
 subset_data <- long_data_country[complete.cases(long_data_country),]
@@ -265,14 +350,15 @@ totalSupport <- subset_data %>%
 if(dim(totalSupport)[1] != 0){
   warning("Party strengths do not sum up to 1 in Switzerland and year ", totalSupport$year)
 }
-write.csv(subset_data, file = "output/chart_data/national.csv", row.names = F)
+write.csv(subset_data, file = "output/by_municipality/national.csv", row.names = F)
 ```
 
 ### all together
 
 ```{r}
 alldata <- long_data %>% select(municipality, party, year, support)
-write.csv(alldata, "output/partystrengths.csv", row.names = F)
+# only keep complete cases (e.g. remove NA)
+write.csv(alldata[complete.cases(alldata),], "output/partystrengths.csv", row.names = F)
 ```
 
 ### Save municipality names & add translations into separate file 

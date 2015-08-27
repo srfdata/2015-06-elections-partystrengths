@@ -19,15 +19,15 @@ The data and methods in this repository are the basis of the article ["So haben 
 
 ### Preprocessing and analysis
 
-The folder `analysis` contains all preprocessing steps done in R (as RMarkdown script `main.Rmd`). The whole process is also available [here](http://srfdata.github.io/2015-06-elections-partystrengths/) as HTML-file. 
+The folder `analysis` contains all preprocessing steps done in R (as RMarkdown script `main.Rmd`). The whole process and **a detailed data description** is also available [here](http://srfdata.github.io/2015-06-elections-partystrengths/) as HTML-file. 
 
 ### Frontend
 
 tba.
 
-## Haftungsausschluss
+## Exclusion of liability
 
-Die veröffentlichten Informationen sind sorgfältig zusammengestellt, erheben aber keinen Anspruch auf Aktualität, Vollständigkeit oder Richtigkeit. Es wird keine Haftung übernommen für Schäden, die  durch die Verwendung dieses Scripts oder der daraus gezogenen Informationen entstehen. Dies gilt ebenfalls für Inhalte Dritter, die über dieses Angebot zugänglich sind. 
+The published information has been collated carefully, but no guarantee is offered of its completeness, correctness or up-to-date nature. No liability is accepted for damage or loss incurred from the use of this script or the information drawn from it. This exclusion of liability also applies to third-party content that is accessible via this offer.
 
 ## License
 

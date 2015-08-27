@@ -16,7 +16,6 @@ prepareYearlyDataForVis <- function(subsetDf, year){
   return(subsetDf)
 }
 
-
 combineAndDelete <- function(destination, sources, year){
   cols <- sapply(sources, function(x){
     paste(x, year, sep = "_")
@@ -30,4 +29,13 @@ combineAndDelete <- function(destination, sources, year){
     filled_data[, col_to_delete] <- NULL
   }
   return(filled_data)
+}
+
+combineAndDeleteCountry <- function(destination, sources, year){
+  long_data_country[long_data_country$year == year & long_data_country$party == destination,]$support <- sum(long_data_country[long_data_country$year == year & long_data_country$party %in% sources,]$support, na.rm = T)
+  to_deletes <- setdiff(sources, destination)
+  for(to_delete in to_deletes){
+    long_data_country[long_data_country$year == year & long_data_country$party == to_delete,]$support <- NA
+  }
+  return(long_data_country)
 }
