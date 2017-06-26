@@ -21,10 +21,6 @@ The data and methods in this repository are the basis of the article ["So haben 
 
 The folder `analysis` contains all preprocessing steps done in R (as RMarkdown script `main.Rmd`). The whole process and **a detailed data description** is also available [here](http://srfdata.github.io/2015-06-elections-partystrengths/) as HTML-file. 
 
-### Frontend
-
-tba.
-
 ## Exclusion of liability
 
 The published information has been collated carefully, but no guarantee is offered of its completeness, correctness or up-to-date nature. No liability is accepted for damage or loss incurred from the use of this script or the information drawn from it. This exclusion of liability also applies to third-party content that is accessible via this offer.
