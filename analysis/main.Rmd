@@ -3,7 +3,15 @@ title: 'Federal Elections 2015: Communal Party Strengths'
 subtitle: 'Preprocessing and analysis'
 author: "SRF Data, Timo Grossenbacher (timo.grossenbacher@srf.ch)" 
 date: "04/14/2015"
-output: html_document
+output:
+  html_document:
+    code_folding: show
+    fig_height: 10
+    theme: simplex
+    toc: yes
+    toc_float: 
+      collapsed: false
+      smooth_scroll: false
 ---
 
 ## Notes
@@ -15,6 +23,8 @@ SRF Data attaches great importance to transparent and reproducible data preproce
 ### R-Script & processed data
 
 The preprocessing and analysis of the data was conducted in the [R project for statistical computing](https://www.r-project.org/). The RMarkdown script used to generate this document and all the resulting data can be downloaded [under this link](http://srfdata.github.io/2015-06-elections-partystrengths/rscript.zip). Through executing `main.Rmd`, the herein described process can be reproduced and this document can be generated. In the course of this, data from the folder `ìnput` will be processed and results will be written to `output`. 
+
+**Attention**: Please set your working directory in the first code chunk!
 
 ### GitHub
 
@@ -51,7 +61,7 @@ The following sections describe the results of the data preprocessing as stored 
 Contains metadata for all 2'345 municipalities as of May 1st, 2014, derived from `input/parteienstaerke_mod_2.xlsx` and `input/gdenamen_translation.xlsx`.
 
 | Attribute | Type | Description | 
-|-------|------|---------|
+|-------|------|---------------------------------------------------------------------|
 | ID | Integer  | Official BFS-number   |
 |  Name_Official  |  String |   Official name of the municipality  |
 |    Name_D  |    String |     Contains the "common" German translation if it exists  |
@@ -63,7 +73,7 @@ Contains metadata for all 2'345 municipalities as of May 1st, 2014, derived from
 Contains party classifications made by SRF Data with the help of political scientists, used throughout all projects related to elections.
 
 | Attribute | Type | Description | 
-|-------|------|---------|
+|-------|------|---------------------------------------------------------------------|
 | ID | Integer  | Unique identifier  |
 |  Abbr_*  |  String |  Abbreviation in German (D), French (F), English (E), Romansh (R), Italian (I), respectively  |
 |  Legend_*  |  String |  Abbreviation, but with slightly more information, used for frontend purposes  |
@@ -78,7 +88,7 @@ Party strengths 1971-2011 in all 2'345 municipalities, as derived from `input/pa
 Note: Only those municipality-year-party combinations are contained where the party actually had candidates. 
 
 | Attribute | Type | Description | 
-|-------|------|---------|
+|-------|------|---------------------------------------------------------------------|
 | municipality | Integer  | Unique identifier, referencing ID in `output/municipalities.csv`  |
 |  party  |  Integer |  Party or party grouping, referencing ID in `output/parties.csv`  |
 |  year  |  Integer |  Election year |
@@ -91,7 +101,7 @@ Party strengths 1971-2011 in municipality with BFS-number *id*.
 Note: Only those year-party combinations are contained where the party actually had candidates. 
 
 | Attribute | Type | Description | 
-|-------|------|---------|
+|-------|------|---------------------------------------------------------------------|
 |  party  |  Integer |  Party or party grouping, referencing ID in `output/parties.csv`  |
 |  year  |  Integer |  Election year |
 |  support |  Double |  Party strength in fraction of 1  (e.g. 0.2 = 20%)|
@@ -103,7 +113,7 @@ Party strengths 1971-2011 on the national level.
 Note: Only those year-party combinations are contained where the party actually had candidates. 
 
 | Attribute | Type | Description | 
-|-------|------|---------|
+|-------|------|---------------------------------------------------------------------|
 |  party  |  Integer |  Party or party grouping, referencing ID in `output/parties.csv`  |
 |  year  |  Integer |  Election year |
 |  support |  Double |  Party strength in fraction of 1  (e.g. 0.2 = 20%)|
@@ -115,7 +125,7 @@ Party strengths 1971-2011 in all municipalities for party with *id* as defined i
 Note: Only those year-municipality combinations are contained where the party actually had candidates. 
 
 | Attribute | Type | Description | 
-|-------|------|---------|
+|-------|------|---------------------------------------------------------------------|
 | municipality | Integer  | Unique identifier, referencing ID in `output/municipalities.csv`  |
 |  year  |  Integer |  Election year |
 |  support |  Double |  Party strength in fraction of 1  (e.g. 0.2 = 20%)|
@@ -125,7 +135,7 @@ Note: Only those year-municipality combinations are contained where the party ac
 Party strengths 1971-2011 with only the "dominant" party per year-municipality combination (i.e. the one with the most support)
 
 | Attribute | Type | Description | 
-|-------|------|---------|
+|-------|------|---------------------------------------------------------------------|
 | municipality | Integer  | Unique identifier, referencing ID in `output/municipalities.csv`  |
 |  party  |  Integer |  Party or party grouping, referencing ID in `output/parties.csv`  |
 |  year  |  Integer |  Election year |
@@ -133,37 +143,86 @@ Party strengths 1971-2011 with only the "dominant" party per year-municipality c
 
 ## Preparations
 
+```{r, echo=FALSE}
+detachAllPackages <- function() {
+  basic.packages.blank <-  c("stats", "graphics", "grDevices", "utils", "datasets", "methods", "base")
+  basic.packages <- paste("package:", basic.packages.blank, sep = "")
+  
+  package.list <- search()[ifelse(unlist(gregexpr("package:", search())) == 1, TRUE, FALSE)]
+  
+  package.list <- setdiff(package.list, basic.packages)
+  
+  if (length(package.list) > 0)  for (package in package.list) {
+    detach(package, character.only = TRUE, unload = TRUE)
+    print(paste("package ", package, " detached", sep = ""))
+  }
+  
+  #   # unload namespace
+  #   lapply(rev(setdiff(loadedNamespaces(), basic.packages.blank)), function(pkg){
+  #     unloadNamespace(pkg)
+  #     print(paste("namespace ", package, " unloaded", sep = ""))
+  #   })
+}
+
+detachAllPackages()
+
+rm(list=ls(all=TRUE)) 
+
+# Adapt working directory! 
+path_to_wd <- switch(EXPR = system2("whoami", stdout = TRUE),
+                     "johndoe" = "~",
+                     NULL)
+if ( is.null(path_to_wd) )
+{
+  print("WARNING: No working directory specified for current user")
+} else
+{
+  setwd(path_to_wd)
+}
+```
+
+### Define packages
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+# von https://mran.revolutionanalytics.com/web/packages/checkpoint/vignettes/using-checkpoint-with-knitr.html
+cat("library(magrittr)
+library(tidyr)
+library(dplyr)
+library(readxl)
+library(ggplot2)", 
+file = "manifest.R")
+package_date <- "2015-08-27"
+
+```
 ### Install packages
 
-```{r, echo=FALSE}
-# load necessary packages
-if(!require(dplyr)) {
-  install.packages("dplyr", repos="http://cran.us.r-project.org")
-  require(dplyr)
-}
-if(!require(tidyr)) {
-  install.packages("tidyr", repos="http://cran.us.r-project.org")
-  require(tidyr)
-}
-if(!require(ggplot2)) {
-  install.packages("ggplot2", repos="http://cran.us.r-project.org")
-  require(ggplot2)
-}
-if(!require(magrittr)) {
-  install.packages("magrittr", repos="http://cran.us.r-project.org")
-  require(magrittr)
-}
-if(!require(readxl)) {
-  devtools::install_github("hadley/readxl")
-  require(readxl)
-}
 
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+if(!require(checkpoint)) {
+  if(!require(devtools)){
+    install.packages("devtools", repos = "http://cran.us.r-project.org")
+    require(devtools)
+  }
+  devtools::install_github("checkpoint", username = "RevolutionAnalytics", ref = "v0.3.2", repos = "http://cran.us.r-project.org")
+  require(checkpoint)
+}
+if(!dir.exists("~/.checkpoint")){
+  dir.create("~/.checkpoint")
+}
+checkpoint(snapshotDate = package_date, project = path_to_wd, verbose = T, scanForPackages = T, use.knitr = F)
+rm(package_date)
+```
 
+### Load packages
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+source("manifest.R")
+unlink("manifest.R")
 ```
 
 ### Load necessary scripts
 
-```{r, echo=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 knitr::read_chunk('scripts/preprocessing.R')
 source('scripts//preprocessing.R')
 ```
@@ -173,7 +232,7 @@ source('scripts//preprocessing.R')
 
 ### Municipality data
 
-```{r, echo=T}
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 # load data
 # read in input file (xlsx) - need to load a slightly modified input file as the original xlsx makes it really complicated
 raw_data <- read_excel("input/parteienstaerke_mod_2.xlsx", sheet = 1, skip = 12, col_names = T)[1:2345,] # replace this subsetting with bugfix in readxl
@@ -230,7 +289,7 @@ long_data %<>% select(BFSNr, Partei, Jahr, Staerke)
 
 ### National data
 
-```{r, echo=T}
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 # country
 # read in input file (xlsx) - need to load a slightly modified input file as the original xlsx makes it really complicated
 raw_data_country <- read_excel("input/parteienstaerke_national.xlsx", sheet = 1, skip = 0, col_names = T)[1:24,] # replace this subsetting with bugfix in readxl
@@ -265,14 +324,14 @@ dim(long_data_country)[1] == 11 * 24
 
 ### Copy party data to output
 
-```{r}
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 parties <- read.csv("input/parties.csv") # same here
 write.csv(parties, file = "output/parties.csv", row.names = F, na = "")
 ```
 
 ### Change variable names and doublecheck
 
-```{r}
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 # change variable names
 long_data %<>% rename(year = Jahr, municipality = BFSNr, party = Partei, support = Staerke) %>%
   mutate(year = as.numeric(format.Date(year, "%Y")), party = as.numeric(party))
@@ -289,7 +348,7 @@ totalSupport %>%
 
 ### By party
 
-```{r}
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 mainDir <- getwd()
 subDir <- "output/by_party"
 dir.create(file.path(mainDir, subDir), showWarnings = FALSE)
@@ -317,7 +376,7 @@ write.csv(subset_data, file = "output/by_party/dominant_party.csv", row.names = 
 
 ### By municipality
 
-```{r}
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 # For the area chart, we need many more files, one for each municipality plus one for all of Switzerland (we estimate that's about 2600 files). Each of these files should contain data for all parties in all years.
 mainDir <- getwd()
 subDir <- "output/by_municipality"
@@ -355,7 +414,7 @@ write.csv(subset_data, file = "output/by_municipality/national.csv", row.names =
 
 ### all together
 
-```{r}
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 alldata <- long_data %>% select(municipality, party, year, support)
 # only keep complete cases (e.g. remove NA)
 write.csv(alldata[complete.cases(alldata),], "output/partystrengths.csv", row.names = F)
@@ -363,7 +422,7 @@ write.csv(alldata[complete.cases(alldata),], "output/partystrengths.csv", row.na
 
 ### Save municipality names & add translations into separate file 
 
-```{r}
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 # save municipality names
 
 # first, load municipality name translations (src http://www.bfs.admin.ch/bfs/portal/de/index/infothek/nomenklaturen/blank/blank/gem_liste/03.Document.90142.xls, slightly edited to make it easier to read in)
